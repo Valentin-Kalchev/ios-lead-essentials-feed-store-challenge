@@ -52,7 +52,9 @@ class CoreDataFeedStore: FeedStore {
     
     func retrieve(completion: @escaping RetrievalCompletion) {
         do {
-            if let managedCache = try managedObjectContext.fetch(ManagedCache.fetchRequest()) as? [ManagedCache], !managedCache.isEmpty {
+            let request = NSFetchRequest<NSFetchRequestResult>(entityName: "ManagedCache")
+            
+            if let managedCache = try managedObjectContext.fetch(request) as? [ManagedCache], !managedCache.isEmpty {
                 let cache = managedCache.first!
                 completion(.found(feed: cache.managedFeedImages.map({$0.localFeedImage}), timestamp: cache.timestamp!))
                 
@@ -120,9 +122,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 
 	func test_retrieve_hasNoSideEffectsOnNonEmptyCache() {
-//		let sut = makeSUT()
-//
-//		assertThatRetrieveHasNoSideEffectsOnNonEmptyCache(on: sut)
+		let sut = makeSUT()
+
+		assertThatRetrieveHasNoSideEffectsOnNonEmptyCache(on: sut)
 	}
 
 	func test_insert_deliversNoErrorOnEmptyCache() {
