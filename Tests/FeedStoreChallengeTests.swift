@@ -4,18 +4,86 @@
 
 import XCTest
 import FeedStoreChallenge
+import CoreData
+
+extension ManagedCache {
+    var managedFeedImages: [ManagedFeedImage] {
+        return feed?.array as? [ManagedFeedImage] ?? []
+    }
+}
+
+extension ManagedFeedImage {
+    var localFeedImage: LocalFeedImage {
+        return LocalFeedImage(id: id!, description: descriptions, location: location, url: url!)
+    }
+}
 
 class CoreDataFeedStore: FeedStore {
-    func deleteCachedFeed(completion: @escaping DeletionCompletion) {
-        fatalError("TODO")
+    
+    private lazy var managedObjectContext: NSManagedObjectContext = {
+        let managedObjectContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
+        managedObjectContext.persistentStoreCoordinator = self.persistentStoreCoordinator
+        return managedObjectContext
+    }()
+    
+    private lazy var managedObjectModel: NSManagedObjectModel = {
+        guard let modelURL = Bundle(for: FeedStoreChallengeTests.self).url(forResource: "Model", withExtension: "momd") else {
+            fatalError("Could not find Model.xcdatamodeld")
+        }
+        
+        let managedObjectModel = NSManagedObjectModel(contentsOf: modelURL)!
+        return managedObjectModel
+    }()
+    
+    private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator = {
+        let persistentStoreCoordinator = NSPersistentStoreCoordinator(managedObjectModel: self.managedObjectModel)
+         
+        let documentsDirectoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let persistentStoreURL = documentsDirectoryURL.appendingPathComponent("Model.sqlite")
+        
+        do {
+            try persistentStoreCoordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: persistentStoreURL, options: nil)
+        } catch {
+            fatalError("Could not create persistent store")
+        }
+        
+        return persistentStoreCoordinator
+    }()
+    
+    func retrieve(completion: @escaping RetrievalCompletion) {
+        do {
+            if let managedCache = try managedObjectContext.fetch(ManagedCache.fetchRequest()) as? [ManagedCache], !managedCache.isEmpty {
+                let cache = managedCache.first!
+                completion(.found(feed: cache.managedFeedImages.map({$0.localFeedImage}), timestamp: cache.timestamp!))
+                
+            } else {
+                completion(.empty)
+            }
+            
+        } catch {
+            completion(.failure(error))
+        }
     }
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
-        fatalError("TODO")
+        let cache = ManagedCache(context: managedObjectContext)
+        cache.timestamp = timestamp
+        let managedFeedImages = feed.map { (image) -> ManagedFeedImage in
+            let managedFeedImage = ManagedFeedImage(context: managedObjectContext)
+            managedFeedImage.id = image.id
+            managedFeedImage.descriptions = image.description
+            managedFeedImage.location = image.location
+            managedFeedImage.url = image.url
+            return managedFeedImage
+        }
+        cache.addToFeed(NSOrderedSet(array: managedFeedImages))
+        
+        try! managedObjectContext.save()
+        completion(.none)
     }
     
-    func retrieve(completion: @escaping RetrievalCompletion) {
-        completion(.empty)
+    func deleteCachedFeed(completion: @escaping DeletionCompletion) {
+        fatalError("TODO")
     }
 }
 
@@ -46,9 +114,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 
 	func test_retrieve_deliversFoundValuesOnNonEmptyCache() {
-//		let sut = makeSUT()
-//
-//		assertThatRetrieveDeliversFoundValuesOnNonEmptyCache(on: sut)
+		let sut = makeSUT()
+
+		assertThatRetrieveDeliversFoundValuesOnNonEmptyCache(on: sut)
 	}
 
 	func test_retrieve_hasNoSideEffectsOnNonEmptyCache() {
