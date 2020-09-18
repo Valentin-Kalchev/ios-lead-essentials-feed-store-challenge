@@ -27,31 +27,13 @@ extension ManagedFeedImage {
 }
 
 class CoreDataFeedStore: FeedStore {
-    private lazy var context: NSManagedObjectContext = container.newBackgroundContext()
+    private let container: NSPersistentContainer
+    private let context: NSManagedObjectContext
     
-    private lazy var managedObjectModel: NSManagedObjectModel = {
-        guard let modelURL = Bundle(for: FeedStoreChallengeTests.self).url(forResource: "Model", withExtension: "momd") else {
-            fatalError("Could not find Model.xcdatamodeld")
-        }
-        
-        return NSManagedObjectModel(contentsOf: modelURL)!
-    }()
-    
-    private lazy var container: NSPersistentContainer = {
-        let persistentContainer = NSPersistentContainer(name: "CoreDataFeedStore", managedObjectModel: managedObjectModel)
-        
-        let description = NSPersistentStoreDescription()
-        description.type = NSInMemoryStoreType
-        
-        persistentContainer.persistentStoreDescriptions = [description]
-        persistentContainer.loadPersistentStores { (storeDescription, error) in
-            if let error = error {
-                fatalError("Failed to load persistent stores with error: \(error)")
-            }
-        }
-        
-        return persistentContainer
-    }()
+    init(storeURL: URL, bundle: Bundle = .main) throws {
+        container = try NSPersistentContainer.load(withModelName: "Model", url: storeURL, in: bundle)
+        context = container.newBackgroundContext()
+    }
     
     func retrieve(completion: @escaping RetrievalCompletion) {
         let context = self.context
@@ -101,6 +83,8 @@ class CoreDataFeedStore: FeedStore {
         }
     }
     
+    
+    
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
         
         let context = self.context
@@ -123,18 +107,6 @@ class CoreDataFeedStore: FeedStore {
 }
 
 class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
-	
-    //  ***********************
-    //
-    //  Follow the TDD process:
-    //
-    //  1. Uncomment and run one test at a time (run tests with CMD+U).
-    //  2. Do the minimum to make the test pass and commit.
-    //  3. Refactor if needed and commit again.
-    //
-    //  Repeat this process until all tests are passing.
-    //
-    //  ***********************
 
 	func test_retrieve_deliversEmptyOnEmptyCache() {
 		let sut = makeSUT()
@@ -211,7 +183,16 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	// - MARK: Helpers
 	
 	private func makeSUT() -> FeedStore {
-		return CoreDataFeedStore()
+        let bundle = Bundle(for: CoreDataFeedStore.self)
+        let storeURL = URL(fileURLWithPath: "/dev/null")
+        
+		let store = try! CoreDataFeedStore(storeURL: storeURL, bundle: bundle)
+        
+//        addTeardownBlock {
+//            XCTAssertNil(store, "Instance of FeedStore has not been deallocated")
+//        }
+        
+        return store
 	}
 	
 }
