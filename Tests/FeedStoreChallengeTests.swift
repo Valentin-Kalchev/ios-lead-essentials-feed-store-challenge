@@ -10,6 +10,14 @@ extension ManagedCache {
     var managedFeedImages: [ManagedFeedImage] {
         return feed?.array as? [ManagedFeedImage] ?? []
     }
+    
+    static func UniqueCache(in context: NSManagedObjectContext) throws -> ManagedCache {
+        try context.fetch(ManagedCache.fetchRequest() as NSFetchRequest<ManagedCache>).forEach({ (cache) in
+            context.delete(cache)
+        })
+        
+        return ManagedCache(context: context)
+    }
 }
 
 extension ManagedFeedImage {
@@ -45,10 +53,12 @@ class CoreDataFeedStore: FeedStore {
     }()
     
     func retrieve(completion: @escaping RetrievalCompletion) {
+        let request: NSFetchRequest<ManagedCache> = ManagedCache.fetchRequest()
+        
         do {
-            let request = NSFetchRequest<NSFetchRequestResult>(entityName: "ManagedCache")
+            let managedCache = try container.viewContext.fetch(request)
             
-            if let managedCache = try container.viewContext.fetch(request) as? [ManagedCache], !managedCache.isEmpty {
+            if !managedCache.isEmpty {
                 let cache = managedCache.first!
                 completion(.found(feed: cache.managedFeedImages.map({$0.localFeedImage}), timestamp: cache.timestamp!))
                 
@@ -63,22 +73,27 @@ class CoreDataFeedStore: FeedStore {
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         
-        let cache = ManagedCache(context: container.viewContext)
-        cache.timestamp = timestamp
-        
-        let managedFeedImages = feed.map { (image) -> ManagedFeedImage in
-            let managedFeedImage = ManagedFeedImage(context: container.viewContext)
-            managedFeedImage.id = image.id
-            managedFeedImage.descriptions = image.description
-            managedFeedImage.location = image.location
-            managedFeedImage.url = image.url
-            return managedFeedImage
+        do {
+            let cache = try ManagedCache.UniqueCache(in: container.viewContext)
+            cache.timestamp = timestamp
+            
+            let managedFeedImages = feed.map { (image) -> ManagedFeedImage in
+                let managedFeedImage = ManagedFeedImage(context: container.viewContext)
+                managedFeedImage.id = image.id
+                managedFeedImage.descriptions = image.description
+                managedFeedImage.location = image.location
+                managedFeedImage.url = image.url
+                return managedFeedImage
+            }
+            
+            cache.addToFeed(NSOrderedSet(array: managedFeedImages))
+            
+            try! container.viewContext.save()
+            completion(.none)
+            
+        } catch {
+            completion(.some(error))
         }
-        
-        cache.addToFeed(NSOrderedSet(array: managedFeedImages))
-        
-        try! container.viewContext.save()
-        completion(.none)
     }
     
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
@@ -137,9 +152,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 
 	func test_insert_overridesPreviouslyInsertedCacheValues() {
-//		let sut = makeSUT()
-//
-//		assertThatInsertOverridesPreviouslyInsertedCacheValues(on: sut)
+		let sut = makeSUT()
+
+		assertThatInsertOverridesPreviouslyInsertedCacheValues(on: sut)
 	}
 
 	func test_delete_deliversNoErrorOnEmptyCache() {
