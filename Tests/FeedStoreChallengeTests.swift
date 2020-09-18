@@ -101,6 +101,7 @@ class CoreDataFeedStore: FeedStore {
             for item in cache {
                 container.viewContext.delete(item)
             }
+            
             try container.viewContext.save()
             
             completion(nil)
@@ -191,9 +192,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 
 	func test_storeSideEffects_runSerially() {
-//		let sut = makeSUT()
-//
-//		assertThatSideEffectsRunSerially(on: sut)
+		let sut = makeSUT()
+
+		assertThatSideEffectsRunSerially(on: sut)
 	}
 	
 	// - MARK: Helpers
