@@ -7,19 +7,18 @@
 //
 
 import Foundation
-import FeedStoreChallenge 
 import CoreData
 
-class CoreDataFeedStore: FeedStore {
+public class CoreDataFeedStore: FeedStore {
     private let container: NSPersistentContainer
     private let context: NSManagedObjectContext
     
-    init(storeURL: URL, bundle: Bundle = .main) throws {
+    public init(storeURL: URL, bundle: Bundle = .main) throws {
         container = try NSPersistentContainer.load(withModelName: "Model", url: storeURL, in: bundle)
         context = container.newBackgroundContext()
     }
     
-    func retrieve(completion: @escaping RetrievalCompletion) {
+    public func retrieve(completion: @escaping RetrievalCompletion) {
         let context = self.context
         context.perform {
             do {
@@ -39,7 +38,7 @@ class CoreDataFeedStore: FeedStore {
         }
     }
     
-    func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
+    public func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         
         let context = self.context
         context.perform {
@@ -57,7 +56,7 @@ class CoreDataFeedStore: FeedStore {
         }
     }
     
-    func deleteCachedFeed(completion: @escaping DeletionCompletion) {
+    public func deleteCachedFeed(completion: @escaping DeletionCompletion) {
         
         let context = self.context
         context.perform {
