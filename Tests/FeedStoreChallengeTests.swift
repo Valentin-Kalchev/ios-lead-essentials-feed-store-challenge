@@ -20,41 +20,35 @@ extension ManagedFeedImage {
 
 class CoreDataFeedStore: FeedStore {
     
-    private lazy var managedObjectContext: NSManagedObjectContext = {
-        let managedObjectContext = NSManagedObjectContext(concurrencyType: .mainQueueConcurrencyType)
-        managedObjectContext.persistentStoreCoordinator = self.persistentStoreCoordinator
-        return managedObjectContext
-    }()
-    
     private lazy var managedObjectModel: NSManagedObjectModel = {
         guard let modelURL = Bundle(for: FeedStoreChallengeTests.self).url(forResource: "Model", withExtension: "momd") else {
             fatalError("Could not find Model.xcdatamodeld")
         }
         
-        let managedObjectModel = NSManagedObjectModel(contentsOf: modelURL)!
-        return managedObjectModel
+        return NSManagedObjectModel(contentsOf: modelURL)!
     }()
     
-    private lazy var persistentStoreCoordinator: NSPersistentStoreCoordinator = {
-        let persistentStoreCoordinator = NSPersistentStoreCoordinator(managedObjectModel: self.managedObjectModel)
-         
-        let documentsDirectoryURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
-        let persistentStoreURL = documentsDirectoryURL.appendingPathComponent("Model.sqlite")
+    private lazy var container: NSPersistentContainer = {
+        let persistentContainer = NSPersistentContainer(name: "CoreDataFeedStore", managedObjectModel: managedObjectModel)
         
-        do {
-            try persistentStoreCoordinator.addPersistentStore(ofType: NSInMemoryStoreType, configurationName: nil, at: persistentStoreURL, options: nil)
-        } catch {
-            fatalError("Could not create persistent store")
+        let description = NSPersistentStoreDescription()
+        description.type = NSInMemoryStoreType
+        
+        persistentContainer.persistentStoreDescriptions = [description]
+        persistentContainer.loadPersistentStores { (storeDescription, error) in
+            if let error = error {
+                fatalError("Failed to load persistent stores with error: \(error)")
+            }
         }
         
-        return persistentStoreCoordinator
+        return persistentContainer
     }()
     
     func retrieve(completion: @escaping RetrievalCompletion) {
         do {
             let request = NSFetchRequest<NSFetchRequestResult>(entityName: "ManagedCache")
             
-            if let managedCache = try managedObjectContext.fetch(request) as? [ManagedCache], !managedCache.isEmpty {
+            if let managedCache = try container.viewContext.fetch(request) as? [ManagedCache], !managedCache.isEmpty {
                 let cache = managedCache.first!
                 completion(.found(feed: cache.managedFeedImages.map({$0.localFeedImage}), timestamp: cache.timestamp!))
                 
@@ -68,19 +62,22 @@ class CoreDataFeedStore: FeedStore {
     }
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
-        let cache = ManagedCache(context: managedObjectContext)
+        
+        let cache = ManagedCache(context: container.viewContext)
         cache.timestamp = timestamp
+        
         let managedFeedImages = feed.map { (image) -> ManagedFeedImage in
-            let managedFeedImage = ManagedFeedImage(context: managedObjectContext)
+            let managedFeedImage = ManagedFeedImage(context: container.viewContext)
             managedFeedImage.id = image.id
             managedFeedImage.descriptions = image.description
             managedFeedImage.location = image.location
             managedFeedImage.url = image.url
             return managedFeedImage
         }
+        
         cache.addToFeed(NSOrderedSet(array: managedFeedImages))
         
-        try! managedObjectContext.save()
+        try! container.viewContext.save()
         completion(.none)
     }
     
