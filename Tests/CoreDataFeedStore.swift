@@ -89,3 +89,23 @@ class CoreDataFeedStore: FeedStore {
         }
     }
 }
+
+private extension ManagedCache {
+    var managedFeedImages: [ManagedFeedImage] {
+        return feed?.array as? [ManagedFeedImage] ?? []
+    }
+    
+    static func UniqueCache(in context: NSManagedObjectContext) throws -> ManagedCache {
+        try context.fetch(ManagedCache.fetchRequest() as NSFetchRequest<ManagedCache>).forEach({ (cache) in
+            context.delete(cache)
+        })
+        
+        return ManagedCache(context: context)
+    }
+}
+
+private extension ManagedFeedImage {
+    var localFeedImage: LocalFeedImage {
+        return LocalFeedImage(id: id!, description: descriptions, location: location, url: url!)
+    }
+}
