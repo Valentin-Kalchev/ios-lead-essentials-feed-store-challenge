@@ -84,8 +84,10 @@ private extension ManagedCache {
     }
     
     static func UniqueCache(in context: NSManagedObjectContext) throws -> ManagedCache {
-        try context.fetch(ManagedCache.fetchRequest() as NSFetchRequest<ManagedCache>).forEach({ (cache) in
-            context.delete(cache)
+        let cache = try context.fetch(ManagedCache.fetchRequest() as NSFetchRequest<ManagedCache>)
+        
+        cache.forEach({ (item) in
+            context.delete(item)
         })
         
         return ManagedCache(context: context)

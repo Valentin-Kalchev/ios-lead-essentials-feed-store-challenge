@@ -87,14 +87,15 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
         let storeURL = URL(fileURLWithPath: "/dev/null")
         
 		let store = try! CoreDataFeedStore(storeURL: storeURL, bundle: bundle)
-        
-//        addTeardownBlock {
-//            XCTAssertNil(store, "Instance of FeedStore has not been deallocated")
-//        }
-        
+        trackForMemoryLeak(store)
         return store
 	}
-	
+    
+    private func trackForMemoryLeak(_ instance: AnyObject, file: StaticString = #file, line: UInt = #line) {
+        addTeardownBlock { [weak instance] in
+            XCTAssertNil(instance, "Instance should have been deallocated", file: file, line: line)
+        }
+    }
 }
 
 //  ***********************
