@@ -93,6 +93,7 @@
 		08CE2B8D2285BBD100183A1B /* FeedStoreChallenge */ = {
 			isa = PBXGroup;
 			children = (
+				E0472F002514B8E60077E4E8 /* CoreData */,
 				08CE2BA72285BCC600183A1B /* LocalFeedImage.swift */,
 				08CE2BA52285BCB600183A1B /* FeedStore.swift */,
 				08CE2B8F2285BBD100183A1B /* Info.plist */,
@@ -103,11 +104,8 @@
 		08CE2B982285BBD100183A1B /* Tests */ = {
 			isa = PBXGroup;
 			children = (
-				E00A67DB251359AF00DC0AC9 /* Model.xcdatamodeld */,
 				08CE2BA92285BCE700183A1B /* FeedStoreSpecs */,
 				08CE2BB42285BEF100183A1B /* FeedStoreChallengeTests.swift */,
-				E0472EFE2514B4630077E4E8 /* CoreDataFeedStore.swift */,
-				E0472EFC2514B3E20077E4E8 /* CoreDataHelpers.swift */,
 				084BB13B24FE50A10091C705 /* FeedStoreIntegrationTests.swift */,
 				08CE2B9B2285BBD100183A1B /* Info.plist */,
 			);
@@ -125,6 +123,16 @@
 				084BB13D24FE56830091C705 /* XCTestCase+FeedStoreHelpers.swift */,
 			);
 			path = FeedStoreSpecs;
+			sourceTree = "<group>";
+		};
+		E0472F002514B8E60077E4E8 /* CoreData */ = {
+			isa = PBXGroup;
+			children = (
+				E00A67DB251359AF00DC0AC9 /* Model.xcdatamodeld */,
+				E0472EFE2514B4630077E4E8 /* CoreDataFeedStore.swift */,
+				E0472EFC2514B3E20077E4E8 /* CoreDataHelpers.swift */,
+			);
+			path = CoreData;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
