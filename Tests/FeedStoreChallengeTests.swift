@@ -53,10 +53,8 @@ class CoreDataFeedStore: FeedStore {
     }()
     
     func retrieve(completion: @escaping RetrievalCompletion) {
-        let request: NSFetchRequest<ManagedCache> = ManagedCache.fetchRequest()
-        
         do {
-            let managedCache = try container.viewContext.fetch(request)
+            let managedCache = try container.viewContext.fetch(ManagedCache.fetchRequest() as NSFetchRequest<ManagedCache>)
             
             if !managedCache.isEmpty {
                 let cache = managedCache.first!
@@ -88,8 +86,8 @@ class CoreDataFeedStore: FeedStore {
             
             cache.addToFeed(NSOrderedSet(array: managedFeedImages))
             
-            try! container.viewContext.save()
-            completion(.none)
+            try container.viewContext.save()
+            completion(nil)
             
         } catch {
             completion(.some(error))
@@ -97,7 +95,13 @@ class CoreDataFeedStore: FeedStore {
     }
     
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
-        completion(.none)
+        do {
+            let _ = try container.viewContext.fetch(ManagedCache.fetchRequest() as NSFetchRequest<ManagedCache>)
+            completion(nil)
+        } catch {
+            completion(.some(error))
+        }
+        
     }
 }
 
@@ -170,9 +174,9 @@ class FeedStoreChallengeTests: XCTestCase, FeedStoreSpecs {
 	}
 
 	func test_delete_deliversNoErrorOnNonEmptyCache() {
-//		let sut = makeSUT()
-//
-//		assertThatDeleteDeliversNoErrorOnNonEmptyCache(on: sut)
+		let sut = makeSUT()
+
+		assertThatDeleteDeliversNoErrorOnNonEmptyCache(on: sut)
 	}
 
 	func test_delete_emptiesPreviouslyInsertedCache() {
