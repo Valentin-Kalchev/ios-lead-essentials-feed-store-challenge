@@ -46,17 +46,7 @@ class CoreDataFeedStore: FeedStore {
             do {
                 let cache = try ManagedCache.UniqueCache(in: context)
                 cache.timestamp = timestamp
-                
-                let managedFeedImages = feed.map { (image) -> ManagedFeedImage in
-                    let managedFeedImage = ManagedFeedImage(context: context)
-                    managedFeedImage.id = image.id
-                    managedFeedImage.descriptions = image.description
-                    managedFeedImage.location = image.location
-                    managedFeedImage.url = image.url
-                    return managedFeedImage
-                }
-                
-                cache.addToFeed(NSOrderedSet(array: managedFeedImages))
+                cache.feed = ManagedFeedImage.feed(from: feed, with: context)
                 
                 try context.save()
                 completion(nil)
@@ -66,8 +56,6 @@ class CoreDataFeedStore: FeedStore {
             }
         }
     }
-    
-    
     
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
         
@@ -107,5 +95,16 @@ private extension ManagedCache {
 private extension ManagedFeedImage {
     var localFeedImage: LocalFeedImage {
         return LocalFeedImage(id: id!, description: descriptions, location: location, url: url!)
+    }
+    
+    static func feed(from images: [LocalFeedImage], with context: NSManagedObjectContext) -> NSOrderedSet {
+        return NSOrderedSet(array: images.map { (image) -> ManagedFeedImage in
+            let managedFeedImage = ManagedFeedImage(context: context)
+            managedFeedImage.id = image.id
+            managedFeedImage.descriptions = image.description
+            managedFeedImage.location = image.location
+            managedFeedImage.url = image.url
+            return managedFeedImage
+        })
     }
 }
