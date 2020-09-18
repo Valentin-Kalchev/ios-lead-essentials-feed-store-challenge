@@ -27,6 +27,7 @@ extension ManagedFeedImage {
 }
 
 class CoreDataFeedStore: FeedStore {
+    private lazy var context: NSManagedObjectContext = container.newBackgroundContext()
     
     private lazy var managedObjectModel: NSManagedObjectModel = {
         guard let modelURL = Bundle(for: FeedStoreChallengeTests.self).url(forResource: "Model", withExtension: "momd") else {
@@ -53,60 +54,70 @@ class CoreDataFeedStore: FeedStore {
     }()
     
     func retrieve(completion: @escaping RetrievalCompletion) {
-        do {
-            let managedCache = try container.viewContext.fetch(ManagedCache.fetchRequest() as NSFetchRequest<ManagedCache>)
-            
-            if !managedCache.isEmpty {
-                let cache = managedCache.first!
-                completion(.found(feed: cache.managedFeedImages.map({$0.localFeedImage}), timestamp: cache.timestamp!))
+        let context = self.context
+        context.perform {
+            do {
+                let managedCache = try context.fetch(ManagedCache.fetchRequest() as NSFetchRequest<ManagedCache>)
                 
-            } else {
-                completion(.empty)
+                if !managedCache.isEmpty {
+                    let cache = managedCache.first!
+                    completion(.found(feed: cache.managedFeedImages.map({$0.localFeedImage}), timestamp: cache.timestamp!))
+                    
+                } else {
+                    completion(.empty)
+                }
+                
+            } catch {
+                completion(.failure(error))
             }
-            
-        } catch {
-            completion(.failure(error))
         }
     }
     
     func insert(_ feed: [LocalFeedImage], timestamp: Date, completion: @escaping InsertionCompletion) {
         
-        do {
-            let cache = try ManagedCache.UniqueCache(in: container.viewContext)
-            cache.timestamp = timestamp
-            
-            let managedFeedImages = feed.map { (image) -> ManagedFeedImage in
-                let managedFeedImage = ManagedFeedImage(context: container.viewContext)
-                managedFeedImage.id = image.id
-                managedFeedImage.descriptions = image.description
-                managedFeedImage.location = image.location
-                managedFeedImage.url = image.url
-                return managedFeedImage
+        let context = self.context
+        context.perform {
+            do {
+                let cache = try ManagedCache.UniqueCache(in: context)
+                cache.timestamp = timestamp
+                
+                let managedFeedImages = feed.map { (image) -> ManagedFeedImage in
+                    let managedFeedImage = ManagedFeedImage(context: context)
+                    managedFeedImage.id = image.id
+                    managedFeedImage.descriptions = image.description
+                    managedFeedImage.location = image.location
+                    managedFeedImage.url = image.url
+                    return managedFeedImage
+                }
+                
+                cache.addToFeed(NSOrderedSet(array: managedFeedImages))
+                
+                try context.save()
+                completion(nil)
+                
+            } catch {
+                completion(.some(error))
             }
-            
-            cache.addToFeed(NSOrderedSet(array: managedFeedImages))
-            
-            try container.viewContext.save()
-            completion(nil)
-            
-        } catch {
-            completion(.some(error))
         }
     }
     
     func deleteCachedFeed(completion: @escaping DeletionCompletion) {
-        do {
-            let cache = try container.viewContext.fetch(ManagedCache.fetchRequest() as NSFetchRequest<ManagedCache>)
-            
-            for item in cache {
-                container.viewContext.delete(item)
+        
+        let context = self.context
+        context.perform {
+            do {
+                let cache = try context.fetch(ManagedCache.fetchRequest() as NSFetchRequest<ManagedCache>)
+                
+                for item in cache {
+                    context.delete(item)
+                }
+                
+                try context.save()
+                
+                completion(nil)
+            } catch {
+                completion(.some(error))
             }
-            
-            try container.viewContext.save()
-            
-            completion(nil)
-        } catch {
-            completion(.some(error))
         }
     }
 }
