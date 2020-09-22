@@ -8,19 +8,25 @@ Your custom persistence infrastructure implementation can be backed by any persi
 
 ![Infrastructure Dependency Diagram](infrastructure_dependency_diagram.png)
 
+
 ## Instructions
 
 1) Fork the latest version of this repository. Here's <a href="https://guides.github.com/activities/forking" target="_blank">how forking works</a>.
 
-2) Implement **at least one** `<FeedStore>` implementation of your choice.
+2) Open the `FeedStoreChallenge.xcodeproj` project on Xcode 12.
 
-3) Use the `Tests/FeedStoreChallengeTests.swift` to validate your implementation. We recommend you to implement one test at a time. Follow the process: Make the test pass, commit, and move to the next one. In the end, all tests **must pass**. 
+3) Implement **one** `<FeedStore>` implementation of your choice (CoreData, Realm, InMemory, etc.).
 
-4) If your implementation has failable operations (e.g., it might fail to load data from disk), uncomment and implement the failable test extensions at the bottom of the `Tests/FeedStoreChallengeTests.swift` test file. 
+4) Use the `Tests/FeedStoreChallengeTests.swift` to validate your implementation. Uncomment and implement one test at a time following the TDD process: Make the test pass, commit, and move to the next one.
 
-5) If your implementation persists data to disk (e.g., CoreData/Realm), you must use the `Tests/FeedStoreIntegrationTests.swift` to check this behavior. We recommend you to implement one test at a time. Follow the process: Make the test pass, commit, and move to the next one. In the end, all tests **must pass**. 
+5) If your implementation has failable operations (e.g., it might fail to load data from disk), uncomment and implement the failable test extensions at the bottom of the `Tests/FeedStoreChallengeTests.swift` test file. 
 
-6) When all tests are passing and you’re done implementing your `<FeedStore>` solution, create a Pull Request from your branch to the main challenge repo. Use the name of your implementation as the title for the Pull Request, for example, *"CoreData implementation - Your name"*.
+6) If your implementation persists data to disk (e.g., CoreData/Realm), you must use the `Tests/FeedStoreIntegrationTests.swift` to check this behavior. Uncomment and implement one test at a time following the TDD process: Make the test pass, commit, and move to the next one.
+
+7) When all tests are passing and you're done implementing your solution, create a Pull Request from your branch to the main challenge repo. Use the name of your implementation as the title for the Pull Request, for example, **"CoreData implementation - Your name"**.
+
+**8) Post a comment in the challenge page in the academy with the link to your PR, so we can review your solution and provide feedback.**
+
 
 ## Guidelines
 
@@ -45,10 +51,6 @@ Your custom persistence infrastructure implementation can be backed by any persi
 10) Strive to produce a clean solution as it can be **an ideal addition to your portfolio**!
 
 Finally, add to this README file:
-
-### Comments and remarks you think other developers will find useful.
-
-...
 
 ### The Dependency Diagram demonstrating the architecture of your solution. 
 ![CoreData Implementation Diagram](CoreDataFeedStoreDiagram.png)
