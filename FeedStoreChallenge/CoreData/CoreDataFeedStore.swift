@@ -20,14 +20,13 @@ public class CoreDataFeedStore: FeedStore {
     
     public func retrieve(completion: @escaping RetrievalCompletion) {
         let context = self.context
+        
         context.perform {
             do {
                 let managedCache = try context.fetch(ManagedCache.fetchRequest() as NSFetchRequest<ManagedCache>)
                 
-                if !managedCache.isEmpty {
-                    let cache = managedCache.first!
-                    completion(.found(feed: cache.managedFeedImages.map({$0.localFeedImage}), timestamp: cache.timestamp!))
-                    
+                if let cache = managedCache.first {
+                    completion(.found(feed: cache.managedFeedImages.map({$0.localFeedImage}), timestamp: cache.timestamp!)) 
                 } else {
                     completion(.empty)
                 }

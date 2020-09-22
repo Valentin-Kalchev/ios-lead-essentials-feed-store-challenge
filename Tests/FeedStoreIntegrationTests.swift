@@ -23,21 +23,21 @@ class FeedStoreIntegrationTests: XCTestCase {
         undoStoreSideEffects()
     }
     
-    func test_retrieve_deliversEmptyOnEmptyCache() {
+    func test_retrieve_deliversNoEmptyOnEmptyCache() {
         let sut = makeSUT()
 
         expect(sut, toRetrieve: .empty)
     }
 
     func test_retrieve_deliversFeedInsertedOnAnotherInstance() {
-//        let storeToInsert = makeSUT()
-//        let storeToLoad = makeSUT()
-//        let feed = uniqueImageFeed()
-//        let timestamp = Date()
-//
-//        insert((feed, timestamp), to: storeToInsert)
-//
-//        expect(storeToLoad, toRetrieve: .found(feed: feed, timestamp: timestamp))
+        let storeToInsert = makeSUT()
+        let storeToLoad = makeSUT()
+        let feed = uniqueImageFeed()
+        let timestamp = Date()
+
+        insert((feed, timestamp), to: storeToInsert)
+
+        expect(storeToLoad, toRetrieve: .found(feed: feed, timestamp: timestamp))
     }
     
     func test_insert_overridesFeedInsertedOnAnotherInstance() {
@@ -70,19 +70,25 @@ class FeedStoreIntegrationTests: XCTestCase {
     
     private func makeSUT() -> FeedStore {
         let bundle = Bundle(for: CoreDataFeedStore.self)
-        let storeURL = URL(fileURLWithPath: "/dev/null")
-        
-        let store = try! CoreDataFeedStore(storeURL: storeURL, bundle: bundle)
+        let store = try! CoreDataFeedStore(storeURL: storeURL(), bundle: bundle)
         trackForMemoryLeak(store)
         return store
     }
     
     private func setupEmptyStoreState() {
-
+        clearCache()
     }
 
     private func undoStoreSideEffects() {
-
+        clearCache()
     }
     
+    private func clearCache(file: StaticString = #file, line: UInt = #line) {
+        try? FileManager.default.removeItem(at: storeURL())
+    }
+    
+    private func storeURL() -> URL {
+        let cachesURL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        return cachesURL.appendingPathComponent("Model.store")
+    }
 }
