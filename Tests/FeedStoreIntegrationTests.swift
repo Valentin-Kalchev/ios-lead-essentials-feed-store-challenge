@@ -70,24 +70,32 @@ class FeedStoreIntegrationTests: XCTestCase {
     
     private func makeSUT() -> FeedStore {
         let bundle = Bundle(for: CoreDataFeedStore.self)
-        let store = try! CoreDataFeedStore(storeURL: storeURL(), bundle: bundle)
+        let storeURL = persistentStoreURL()
+        let store = try! CoreDataFeedStore(storeURL: storeURL, bundle: bundle)
         trackForMemoryLeak(store)
         return store
     }
     
     private func setupEmptyStoreState() {
-        clearCache()
+        removePersistentStoreIfItExists()
     }
 
     private func undoStoreSideEffects() {
-        clearCache()
+        removePersistentStoreIfItExists()
     }
     
-    private func clearCache(file: StaticString = #file, line: UInt = #line) {
-        try? FileManager.default.removeItem(at: storeURL())
+    private func removePersistentStoreIfItExists(file: StaticString = #file, line: UInt = #line) {
+        let url = persistentStoreURL()
+        if FileManager.default.fileExists(atPath: url.path) {
+            do {
+                try FileManager.default.removeItem(at: url)
+            } catch {
+                XCTFail("Failed to remove store with error: \(error)", file: file, line: line)
+            }
+        }
     }
     
-    private func storeURL() -> URL {
+    private func persistentStoreURL() -> URL {
         let cachesURL = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
         return cachesURL.appendingPathComponent("Model.store")
     }
